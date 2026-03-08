@@ -873,14 +873,8 @@
                 // Load user-specific API token
                 loadUserApiToken();
 
-                // Update mute button state
-                if (isMuted) {
-                    document.getElementById('muteBtn').textContent = '🔇';
-                    document.getElementById('muteBtn').classList.add('muted');
-                }
-
-                // Initialize app
-                initApp();
+                // Initialize app - all vars are now declared before this runs
+                bootApp();
             } else {
                 errorDiv.classList.add('show');
                 setTimeout(() => errorDiv.classList.remove('show'), 3000);
@@ -894,23 +888,7 @@
             }
         }
 
-        // Check if already logged in
-        if (currentUser) {
-            document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('mainApp').classList.add('show');
-            document.getElementById('userBadge').textContent = currentUser.displayName;
-
-            // Load user-specific API token
-            loadUserApiToken();
-
-            // Update mute button state
-            if (isMuted) {
-                document.getElementById('muteBtn').textContent = '🔇';
-                document.getElementById('muteBtn').classList.add('muted');
-            }
-        }
-
-        // ========== REST OF THE CODE ==========
+        // ========== APP STATE (declared first so everything can use them) ==========
         let apiToken = '';  // Will be loaded based on user
         let personality = localStorage.getItem('star_personality') || '';
         let voiceMessages = JSON.parse(localStorage.getItem('star_voices') || '[]');
@@ -1307,11 +1285,11 @@
         function updateBadge(state) {
             // state: 'listening' | 'pause' | 'thinking' | 'hidden'
             if (state === 'listening') {
-                badge.innerHTML = '🎤 i'm listening...';
+                badge.innerHTML = "🎤 i'm listening...";
                 badge.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
                 badge.classList.add('show');
             } else if (state === 'pause') {
-                badge.innerHTML = '⏸ still here... keep going';
+                badge.innerHTML = "⏸ still here... keep going";
                 badge.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
                 badge.classList.add('show');
             } else {
@@ -1480,7 +1458,7 @@
                 star.classList.add('talking');
                 setEmotion('happy');
                 // Show a subtle tap-to-interrupt hint on the badge
-                badge.innerHTML = '👆 tap star to interrupt';
+                badge.innerHTML = "👆 tap star to interrupt";
                 badge.style.background = 'linear-gradient(135deg, #9333ea 0%, #7c3aed 100%)';
                 badge.classList.add('show');
             };
@@ -1994,14 +1972,47 @@ MISSION: Be the emotional presence beside sunflower the way Raaj naturally would
             addMsg(greeting, false);
         }
 
-        scheduleCheckin(); // start check-in timer on load
+        // ── BOOT FUNCTION — runs after ALL variables and functions are declared ──
+        function bootApp() {
+            // Reload currentUser from localStorage in case it just changed
+            currentUser = JSON.parse(localStorage.getItem('star_current_user'));
+            if (!currentUser) return;
+
+            // Show main app, hide login
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.add('show');
+            document.getElementById('userBadge').textContent = currentUser.displayName;
+
+            // Load correct API token for this user
+            loadUserApiToken();
+
+            // Apply mute state
+            isMuted = JSON.parse(localStorage.getItem('star_is_muted') || 'false');
+            if (isMuted) {
+                document.getElementById('muteBtn').textContent = '🔇';
+                document.getElementById('muteBtn').classList.add('muted');
+            } else {
+                document.getElementById('muteBtn').textContent = '🔊';
+                document.getElementById('muteBtn').classList.remove('muted');
+            }
+
+            setEmotion('happy');
+            initApp();
+            scheduleCheckin();
+            setTimeout(randomBlink, 3000);
+            console.log('✅ S.T.A.R Ready! User:', currentUser.displayName);
+        }
+
+        // Wire up buttons
         sendBtn.addEventListener('click', sendMessage);
         input.addEventListener('keypress', e => { if (e.key === 'Enter') sendMessage(); });
-        setEmotion('happy');
-        if (currentUser) initApp();
-        console.log('✅ S.T.A.R Ready!');
-        setTimeout(randomBlink, 3000);
-        console.log("🎭 Enhanced animations active");
+
+        // Auto-boot if already logged in
+        if (currentUser) {
+            bootApp();
+        }
+
+        console.log("🎭 S.T.A.R Enhanced animations active");
     </script>
 </body>
 </html>
